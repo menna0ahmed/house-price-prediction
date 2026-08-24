@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Price Prediction</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 40px; }
+        .container { max-width: 500px; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: 0 auto; }
+        h2 { text-align: center; color: #333; margin-bottom: 25px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #666; font-weight: 600; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        button:hover { background-color: #218838; }
+        .result { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 6px; text-align: center; font-size: 18px; font-weight: bold; color: #2c3e50; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🏠 House Price Predictor</h2>
+    <form id="predictForm">
+        <div class="form-group">
+            <label>Carpet Area (sqft):</label>
+            <input type="number" id="carpet_area_sqft" value="1000" required>
+        </div>
+        <div class="form-group">
+            <label>Floor Number:</label>
+            <input type="number" id="floor_num" value="2" required>
+        </div>
+        <div class="form-group">
+            <label>Bathrooms:</label>
+            <input type="number" id="bathroom" value="2" required>
+        </div>
+        <div class="form-group">
+            <label>Balconies:</label>
+            <input type="number" id="balcony" value="1" required>
+        </div>
+        <div class="form-group">
+            <label>Location:</label>
+            <select id="location_grouped">
+                <option value="other">Loading locations...</option>
+            </select>
+        </div>
+        <button type="submit">Predict Price</button>
+    </form>
+
+    <div id="result" class="result" style="display: none;"></div>
+</div>
+
+<script>
+    const API_URL = "http://127.0.0.1:8000";
+
+    // جلب قائمة المناطق المتاحة من الباك إند
+    async function loadLocations() {
+        try {
+            const res = await fetch(`${API_URL}/locations`);
+            const data = await res.json();
+            const select = document.getElementById("location_grouped");
+            select.innerHTML = "";
+            data.locations.forEach(loc => {
+                const opt = document.createElement("option");
+                opt.value = loc;
+                opt.textContent = loc;
+                select.appendChild(opt);
+            });
+        } catch (err) {
+            console.error("Error loading locations:", err);
+        }
+    }
+
+    loadLocations();
+
+    // إرسال البيانات للتوقع
+    document.getElementById("predictForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const payload = {
+            carpet_area_sqft: parseFloat(document.getElementById("carpet_area_sqft").value),
+            floor_num: parseInt(document.getElementById("floor_num").value),
+            bathroom: parseInt(document.getElementById("bathroom").value),
+            balcony: parseInt(document.getElementById("balcony").value),
+            location_grouped: document.getElementById("location_grouped").value
+        };
+
+        try {
+            const res = await fetch(`${API_URL}/predict`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            const resultDiv = document.getElementById("result");
+            resultDiv.style.display = "block";
+            resultDiv.innerHTML = `Estimated Price: <span style="color: #28a745;">₹ ${data.predicted_price.toLocaleString()}</span>`;
+        } catch (err) {
+            alert("Error communicating with Backend server!");
+        }
+    });
+</script>
+
+</body>
+</html>
